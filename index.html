@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Kiwi.js - Hello World</title>
+</head>
+<body>
+<audio src="sound/forest-theme-soundscape.mp3" autoplay>
+  Votre navigateur ne supporte pas l'élément <code>audio</code>.
+</audio>
+<script src="kiwi.min.js"></script>
+<script type="text/javascript">
+
+	var gameOptions = {
+		width: 768,
+		height: 512,
+		renderer: Kiwi.RENDERER_CANVAS
+	};
+	var game = new Kiwi.Game(null, 'Hello World', null, gameOptions );
+	var myState = new Kiwi.State('myState');
+	var planets = ['moon','jupiter','mars','mercury'];
+
+	myState.preload = function(){
+	    Kiwi.State.prototype.preload.call(this);
+
+		// Adds a basic score widget to the defaultHUD of the game.
+		this.score = new Kiwi.HUD.Widget.BasicScore( this.game, 50, 50, 0 );
+		this.game.huds.defaultHUD.addWidget( this.score );
+		this.score.style.color = 'blue';
+
+		//load image
+	  	this.addImage('space', 'img/bg.png');
+    	this.addImage('earth', 'img/earth.png');
+    	this.addImage('jupiter', 'img/jupiter.png');
+    	this.addImage('mars', 'img/mars.png');
+    	this.addImage('moon', 'img/moon.png');
+    	this.addImage('mercury', 'img/mercury.png');
+
+    	//load sound
+    	this.addAudio( 'backgroundMusic', 'sound/forest-theme-soundscape.mp3' );
+
+	}
+
+	myState.create = function(){
+	    Kiwi.State.prototype.create.call(this);
+
+
+		//load background
+		this.space = new Kiwi.GameObjects.Sprite(this, this.textures.space);
+		this.addChild( this.space );
+		//load sound
+		this.backgroundMusic = new Kiwi.Sound.Audio(this.game, "backgroundMusic", 0.3, true );
+		this.backgroundMusic.play();
+		//load earth moveable
+		this.earth = new Planet( this,  randX, randY , 'earth')
+		this.addChild( this.earth );
+		this.earth.input.enableDrag();
+		this.earth.input.onDragStarted.add( this.startedDrag, this );
+		this.earth.input.onDragStopped.add( this.stoppedDrag, this );
+
+		//load other planet
+		this.group = new Kiwi.Group( this );
+		this.addChild( this.group );
+		for ( var i = 0; i < 10; i ++ ){
+			//get a random planet
+			var planetSprite = planets[Math.floor(Math.random()*planets.length)];
+			var spriteWidth = this.textures[planetSprite].width;
+			var spriteHeight = this.textures[planetSprite].height;
+
+			var randX = Math.random() * ( this.game.stage.width - spriteWidth ),
+				randY = Math.random() * ( this.game.stage.height - spriteHeight );
+
+			var tempSprite = new Planet( this,  randX, randY , planetSprite);
+
+			this.group.addChild( tempSprite );
+
+		}
+
+		//debug
+		// game.stage.createDebugCanvas();
+
+	}
+	//
+	myState.startedDrag = function () {
+		// this.player.animation.play( 'run' );
+	}
+
+	myState.stoppedDrag = function() {
+		// this.player.animation.switchTo('default');
+	}
+
+
+	myState.update = function(){
+	   	Kiwi.State.prototype.update.call(this);
+	   	// debug
+		// game.stage.clearDebugCanvas();
+		// this.earth.box.draw(game.stage.dctx);
+		this.movePlanet(this.earth);
+
+		// Calls the forEach method on 'this.group'. Passing custom parameters in the third parameter.
+		this.group.forEach( this, this.movePlanet, [ this.wobble ] );
+	};
+
+	myState.movePlanet = function ( sprite, wobble ) {
+		if (sprite != this.earth) {
+			//check colision
+	   		var circle1 = new Kiwi.Geom.Circle(this.earth.x + this.earth.width /2 ,this.earth.y + this.earth.height /2,this.earth.width*0.8 )
+	   		var circle2 = new Kiwi.Geom.Circle(sprite.x + sprite.width /2 ,sprite.y + sprite.height /2,sprite.width*0.8 )
+	   		var resultColision = Kiwi.Geom.Intersect.circleToCircle(circle1,circle2).result;
+			if ( resultColision == true ) {
+				this.score.counter.current += 100;
+				sprite.destroy();
+			}
+		}
+   		
+		//check if sprite is out the game
+		if( sprite.x > this.game.stage.width ) {
+			//reset or remove
+			sprite.x = -sprite.width;
+		}
+		if( sprite.y > this.game.stage.height ) {
+			//reset or remove
+			sprite.y = -this.earth.height;
+		}
+		sprite.rotation += Math.random() * 0.05;
+	}
+	//class Planet to manage physics or other properties
+	var Planet = function( state, x, y, img ) {
+		Kiwi.GameObjects.Sprite.call(this, state, state.textures[ img ], x, y, true );
+		this.physics = this.components.add( new Kiwi.Components.ArcadePhysics(this, this.box) );
+
+		// this.physics.acceleration = new Kiwi.Geom.Point( 0, 15 );
+		this.physics.velocity = new Kiwi.Geom.Point( 10*Math.random(), 10*Math.random() );
+		this.rotation = Math.random() * 10;
+
+	};
+	Kiwi.extend( Planet, Kiwi.GameObjects.Sprite );
+
+	game.states.addState(myState, true);
+
+</script>
+</body>
+</html>
