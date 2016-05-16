@@ -5,7 +5,7 @@
 	<title>Kiwi.js - Hello World</title>
 </head>
 <body>
-<audio src="sound/forest-theme-soundscape.mp3" autoplay>
+<audio src="sound/forest-theme-soundscape.mp3" >
   Votre navigateur ne supporte pas l'élément <code>audio</code>.
 </audio>
 <script src="kiwi.min.js"></script>
@@ -52,7 +52,9 @@
 		this.backgroundMusic = new Kiwi.Sound.Audio(this.game, "backgroundMusic", 0.3, true );
 		this.backgroundMusic.play();
 		//load earth moveable
-		this.earth = new Planet( this,  randX, randY , 'earth')
+		this.earth = new Planet( this , 'earth');
+		this.earth.x = 0;
+		this.earth.y = 0;
 		this.addChild( this.earth );
 		this.earth.input.enableDrag();
 		this.earth.input.onDragStarted.add( this.startedDrag, this );
@@ -64,13 +66,7 @@
 		for ( var i = 0; i < 10; i ++ ){
 			//get a random planet
 			var planetSprite = planets[Math.floor(Math.random()*planets.length)];
-			var spriteWidth = this.textures[planetSprite].width;
-			var spriteHeight = this.textures[planetSprite].height;
-
-			var randX = Math.random() * ( this.game.stage.width - spriteWidth ),
-				randY = Math.random() * ( this.game.stage.height - spriteHeight );
-
-			var tempSprite = new Planet( this,  randX, randY , planetSprite);
+			var tempSprite = new Planet( this, planetSprite);
 
 			this.group.addChild( tempSprite );
 
@@ -109,8 +105,15 @@
 	   		var resultColision = Kiwi.Geom.Intersect.circleToCircle(circle1,circle2).result;
 			if ( resultColision == true ) {
 				this.score.counter.current += 100;
-				sprite.destroy();
+				sprite.visible = false;
+				sprite.x = Math.random() * ( this.game.stage.width - sprite.width );
+				sprite.y = 0;
+				sprite.visible = true;
+
+
 			}
+			sprite.rotation += Math.random() * 0.05;
+
 		}
    		
 		//check if sprite is out the game
@@ -122,16 +125,24 @@
 			//reset or remove
 			sprite.y = -this.earth.height;
 		}
-		sprite.rotation += Math.random() * 0.05;
+	
 	}
 	//class Planet to manage physics or other properties
-	var Planet = function( state, x, y, img ) {
-		Kiwi.GameObjects.Sprite.call(this, state, state.textures[ img ], x, y, true );
-		this.physics = this.components.add( new Kiwi.Components.ArcadePhysics(this, this.box) );
+	var Planet = function( state , img ) {
+		var SPEED = 30;
+		var spriteWidth = state.textures[img].width;
+		var spriteHeight = state.textures[img].height;
+		this.name = img;
+		var randX = Math.random() * ( game.stage.width - spriteWidth ),
+			randY = Math.random() * ( game.stage.height - spriteHeight );
 
-		// this.physics.acceleration = new Kiwi.Geom.Point( 0, 15 );
-		this.physics.velocity = new Kiwi.Geom.Point( 10*Math.random(), 10*Math.random() );
-		this.rotation = Math.random() * 10;
+		Kiwi.GameObjects.Sprite.call(this, state, state.textures[ img ], randX, randY, true );
+		this.physics = this.components.add( new Kiwi.Components.ArcadePhysics(this, this.box) );
+		if (img != 'earth') {
+			this.physics.velocity = new Kiwi.Geom.Point( SPEED*Math.random(), SPEED*Math.random() );
+			// this.physics.acceleration = new Kiwi.Geom.Point( 0, 1 );
+			this.rotation = Math.random() * 10;
+		}
 
 	};
 	Kiwi.extend( Planet, Kiwi.GameObjects.Sprite );
